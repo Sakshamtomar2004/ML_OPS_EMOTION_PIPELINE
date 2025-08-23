@@ -1,0 +1,29 @@
+name: emotion_detection_pipeline
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      config_path: {type: str, default: "configs/config.yaml"}
+    command: "python main.py --config_path {config_path}"
+    
+  data_ingestion:
+    parameters:
+      config_path: {type: str, default: "configs/config.yaml"}
+    command: "python -m src.data_ingestion --config_path {config_path}"
+    
+  feature_extraction:
+    parameters:
+      config_path: {type: str, default: "configs/config.yaml"}
+    command: "python -m src.feature_extraction --config_path {config_path}"
+    
+  model_training:
+    parameters:
+      config_path: {type: str, default: "configs/config.yaml"}
+    command: "python -m src.model_training --config_path {config_path}"
+    
+  model_evaluation:
+    parameters:
+      config_path: {type: str, default: "configs/config.yaml"}
+    command: "python -m src.model_evaluation --config_path {config_path}"

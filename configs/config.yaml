@@ -1,0 +1,44 @@
+# Data Configuration
+data:
+  raw_data_url: "https://www.kaggle.com/datasets/shivendratomar/emotions-audio-clips"
+  raw_data_dir: "artifacts/data/raw"
+  processed_data_dir: "artifacts/data/processed"
+  clips_data_dir: "artifacts/data/clips_5sec"
+  feat_dir: "artifacts/features" 
+
+  
+# Audio Processing Parameters  
+audio:
+  sample_rate: 22050
+  clip_duration: 5.0
+  
+# Feature Extraction Parameters
+features:
+  n_mfcc: 44
+  n_mels: 128
+  n_fft: 2048
+  hop_length: 512
+  max_feature_bytes: 2147483648  # 2GB
+  
+# Model Parameters
+model:
+  validation_split: 0.2
+  batch_size: 32
+  epochs: 20
+  learning_rate: 0.001
+  dropout_rate: 0.5
+  patience: 7
+  reduce_lr_patience: 4
+  min_lr: 0.000005
+  
+# MLflow Configuration
+mlflow:
+  experiment_name: "emotion_detection"
+  run_name: "emotion_classification_run"
+  
+# Logging
+logging:
+  level: "INFO"
+  
+# Random State
+random_state: 42
