@@ -23,7 +23,7 @@ def configure_logger():
     """
     # Create a custom logger
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     
     # Define formatter
     formatter = logging.Formatter("[ %(asctime)s ] %(name)s - %(levelname)s - %(message)s")
@@ -41,6 +41,9 @@ def configure_logger():
     # Add handlers to the logger
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
+    logging.getLogger("git").setLevel(logging.WARNING)
+    logging.getLogger("numba").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 # Configure the logger
 configure_logger()
