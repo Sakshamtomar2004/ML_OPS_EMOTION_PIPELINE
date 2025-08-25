@@ -176,3 +176,12 @@ mlruns/
 .venv/
 
 
+
+# Add to .dvcignore
+mlruns/
+*.log
+__pycache__/
+.pytest_cache/
+
+
+

@@ -4,10 +4,10 @@ data:
   raw_data_dir: "artifacts/data/raw"
   processed_data_dir: "artifacts/data/processed"
   clips_data_dir: "artifacts/data/clips_5sec"
-  feat_dir: "artifacts/features"
-  data_dir: "artifacts"
+  feat_dir: "artifacts/features" 
 
-# Audio Processing Parameters
+  
+# Audio Processing Parameters  
 audio:
   sample_rate: 22050
   clip_duration: 5
@@ -22,14 +22,13 @@ features:
   
 # Model Parameters
 model:
-  model_type: "Transfer_Learning"
   validation_split: 0.2
   batch_size: 32
-  epochs: 35
+  epochs: 20
   learning_rate: 0.001
-  dropout_rate: 0.2
-  patience: 60
-  reduce_lr_patience: 60
+  dropout_rate: 0.5
+  patience: 7
+  reduce_lr_patience: 4
   min_lr: 0.000005
   
 # MLflow Configuration

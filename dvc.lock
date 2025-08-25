@@ -1,0 +1,69 @@
+schema: '2.0'
+stages:
+  data_ingestion:
+    cmd: python -m src.data_ingestion --config_path configs/config.yaml
+    deps:
+    - path: configs/config.yaml
+      hash: md5
+      md5: 2f526b3db81b83fd3353437aefd8944d
+      size: 935
+    - path: src/data_ingestion.py
+      hash: md5
+      md5: 1d628415396182d7455324b1278476a3
+      size: 7696
+    params:
+      params.yaml:
+        audio.clip_duration: 5
+        audio.sample_rate: 22050
+        data.clips_data_dir: artifacts/data/clips_5sec
+        data.raw_data_url: 
+          https://www.kaggle.com/datasets/shivendratomar/emotions-audio-clips
+    outs:
+    - path: artifacts/data/clips_5sec/
+      hash: md5
+      md5: 250829a1e32263602a42cc01e90927f3.dir
+      size: 313748812
+      nfiles: 1423
+    - path: artifacts/metrics/data_metrics.json
+      hash: md5
+      md5: 28003a4b9176148c17bafe24a5341d56
+      size: 27
+  feature_extraction:
+    cmd: python -m src.feature_extraction --config_path configs/config.yaml
+    deps:
+    - path: artifacts/data/clips_5sec/clips_metadata.csv
+      hash: md5
+      md5: 3f72e3b75d4ca80cf33aebadf47d9ca9
+      size: 135244
+    - path: configs/config.yaml
+      hash: md5
+      md5: 2f526b3db81b83fd3353437aefd8944d
+      size: 935
+    - path: src/feature_extraction.py
+      hash: md5
+      md5: 9106c7932ac935007ae1c93d506ec87f
+      size: 7424
+    params:
+      params.yaml:
+        features.hop_length: 512
+        features.max_feature_bytes: 2147483648
+        features.n_fft: 2048
+        features.n_mels: 128
+        features.n_mfcc: 40
+    outs:
+    - path: artifacts/features/cats_chunks.pkl
+      hash: md5
+      md5: afa529797e860edae4f207b8977a630b
+      size: 2883
+    - path: artifacts/features/features_chunks.pkl
+      hash: md5
+      md5: c5ee23a247eb41eddf6a8af5344dfb6e
+      size: 206530000
+    - path: artifacts/features/subcats_chunks.pkl
+      hash: md5
+      md5: 2f55b8008b66e30510845bb8e60434a1
+      size: 2947
+    - path: artifacts/metrics/feature_metrics.json
+      hash: md5
+      md5: b04f3c3ed26d3929ac5518369c41ddce
+      size: 117

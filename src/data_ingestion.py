@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import yaml
@@ -9,14 +10,13 @@ import librosa
 from tqdm import tqdm
 from src.logger import logging
 from src.exception import MyException
-
 class DataIngestion:
     def __init__(self, config_path):
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
         self.data_config = self.config['data']
         self.audio_config = self.config['audio']
-
+        self.data_dir=self.data_config['data_dir']
     def download_data(self):
         """Download raw audio data"""
         try:
@@ -27,53 +27,59 @@ class DataIngestion:
                 data_dir=self.data_config['raw_data_dir']
             )
             logging.info("Data download completed")
-            mlflow.log_param("data_source", self.data_config['raw_data_url'])
+            if mlflow.active_run():
+                mlflow.log_param("data_source", self.data_config['raw_data_url'])
             return True
         except Exception as e:
             logging.error(f"Data download failed: {e}")
             raise MyException(e, sys) from e
+    
+    @staticmethod
+    def save_data_metrics(output_dir, total_clips):
+        metrics_dir = os.path.join(output_dir , "metrics")
+        os.makedirs(metrics_dir, exist_ok=True)
+        metrics_path = os.path.join(metrics_dir, "data_metrics.json")
+        metrics = {
+        "total_clips": total_clips
+    }
+        with open(metrics_path, "w") as f:
+           json.dump(metrics, f, indent=2)
+    
+
 
     def clip_5sec_segments(self):
         """Create 5-second audio clips"""
         try:
             logging.info("Starting audio clipping to 5-second segments")
-
             root_dir = self.data_config['raw_data_dir']
             root_dir=os.path.join(root_dir,'emotions-audio-clips')
             output_dir = self.data_config['clips_data_dir']
             sample_rate = self.audio_config['sample_rate']
             clip_duration = self.audio_config['clip_duration']
             clip_samples = int(clip_duration * sample_rate)
-
             records = []
-
             for category in ["Danger", "Non-Danger"]:
                 cat_path = os.path.join(root_dir, category)
                 if not os.path.isdir(cat_path):
                     continue
-
                 for subcat in sorted(os.listdir(cat_path)):
                     sub_dir = os.path.join(cat_path, subcat)
                     if not os.path.isdir(sub_dir):
                         continue
-
                     remainder = np.array([], dtype=np.float32)
                     clip_idx = 0
                     out_subdir = os.path.join(output_dir, category, subcat)
                     os.makedirs(out_subdir, exist_ok=True)
-
                     for fname in tqdm(sorted(os.listdir(sub_dir)),
                                       desc=f"{category}/{subcat}", unit="file"):
                         if not fname.lower().endswith(('.wav', '.mp3')):
                             continue
-
                         file_path = os.path.join(sub_dir, fname)
                         try:
                             y, sr = librosa.load(file_path, sr=sample_rate, mono=True)
                         except Exception as e:
                             logging.error(f"Failed to load {file_path}: {e}")
                             continue
-
                         # Exact 5-second files
                         duration = len(y) / sr
                         if abs(duration - clip_duration) < 1e-2:
@@ -87,12 +93,10 @@ class DataIngestion:
                             })
                             #logging.info(f"Added exact {clip_duration}s file: {fname}")
                             continue
-
                         # Prepend remainder
                         if remainder.size:
                             y = np.concatenate([remainder, y])
                             remainder = np.array([], dtype=np.float32)
-
                         idx = 0
                         total = len(y)
                         while idx + clip_samples <= total:
@@ -107,9 +111,7 @@ class DataIngestion:
                             })
                             clip_idx += 1
                             idx += clip_samples
-
                         remainder = y[idx:]
-
             # If no clips were created, list all original short files
             if not records:
                 data = []
@@ -131,21 +133,24 @@ class DataIngestion:
                 df = pd.DataFrame(data, columns=["file_path", "category", "subcategory"])
             else:
                 df = pd.DataFrame(records, columns=["file_path", "category", "subcategory"])
-
             os.makedirs(output_dir, exist_ok=True)
             csv_path = os.path.join(output_dir, "clips_metadata.csv")
             df.to_csv(csv_path, index=False)
+            # after saving clips_metadata.csv
+            total_clips = len(df)  # your clips DataFrame length
+            DataIngestion.save_data_metrics(self.data_dir, total_clips)
 
-            mlflow.log_param("total_clips", len(df))
-            mlflow.log_param("clip_duration", clip_duration)
-            mlflow.log_artifact(csv_path)
-         #   mlflow.log_artifact("src\data_ingestion.py")
-         #   mlflow.log_artifact("src\feature_extraction.py")
 
+
+            if mlflow.active_run():
+                mlflow.log_param("total_clips", len(df))
+                mlflow.log_param("clip_duration", clip_duration)
+                mlflow.log_artifact(csv_path)
+              #  mlflow.log_artifact("src/data_ingestion.py")
+              #  mlflow.log_artifact("src/feature_extraction.py")
 
             logging.info(f"Saved metadata CSV with {len(df)} clips: {csv_path}")
             return df
-
         except Exception as e:
             logging.error(f"Audio clipping failed: {e}")
             raise MyException(e, sys) from e
@@ -154,15 +159,10 @@ class DataIngestion:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config_path", type=str, default="configs/config.yaml"
-    )
+    parser.add_argument("--config_path", type=str, default="configs/config.yaml")
     args = parser.parse_args()
-
-    with mlflow.start_run(run_name="data_ingestion"):
-        ing = DataIngestion(args.config_path)
-        ing.download_data()
-        ing.clip_5sec_segments()
-        mlflow.log_artifact("src\data_ingestion.py")
-        mlflow.log_artifact("src\feature_extraction.py")
-
+    
+    # Can run standalone or within MLflow
+    data_ingestion = DataIngestion(args.config_path)
+    data_ingestion.download_data()
+    data_ingestion.clip_5sec_segments()

@@ -1,0 +1,71 @@
+stages:
+  data_ingestion:
+    cmd: python -m src.data_ingestion --config_path configs/config.yaml
+    deps:
+      - src/data_ingestion.py
+      - configs/config.yaml
+    outs:
+      - artifacts/data/clips_5sec/
+    params:
+      - audio.sample_rate
+      - audio.clip_duration
+      - data.raw_data_url
+      - data.clips_data_dir
+    metrics:
+      - artifacts/metrics/data_metrics.json
+
+  feature_extraction:
+    cmd: python -m src.feature_extraction --config_path configs/config.yaml
+    deps:
+      - src/feature_extraction.py
+      - configs/config.yaml
+      - artifacts/data/clips_5sec/clips_metadata.csv
+    outs:
+      - artifacts/features/features_chunks.pkl
+      - artifacts/features/cats_chunks.pkl
+      - artifacts/features/subcats_chunks.pkl
+    params:
+      - features.n_mfcc
+      - features.n_mels
+      - features.n_fft
+      - features.hop_length
+      - features.max_feature_bytes
+    metrics:
+      - artifacts/metrics/feature_metrics.json
+
+  model_training:
+    cmd: python -m src.model_training --config_path configs/config.yaml
+    deps:
+      - src/model_training.py
+      - configs/config.yaml
+      - artifacts/features/features_chunks.pkl
+      - artifacts/features/cats_chunks.pkl
+      - artifacts/features/subcats_chunks.pkl
+    outs:
+      - artifacts/models/emotion_classifier.h5
+      - artifacts/models/metadata.pkl
+      - artifacts/plots/training_curves.png
+    params:
+      - model.validation_split
+      - model.batch_size
+      - model.epochs
+      - model.learning_rate
+      - model.dropout_rate
+    metrics:
+      - artifacts/metrics/training_metrics.json
+
+  # full_pipeline:
+  #   cmd: python main.py --config_path configs/config.yaml
+  #   deps:
+  #     - main.py
+  #     - src/data_ingestion.py
+  #     - src/feature_extraction.py
+  #     - src/model_training.py
+  #     - configs/config.yaml
+  #   outs: []
+  #   params:
+  #     - audio
+  #     - features
+  #     - model
+  #   metrics:
+  #     - artifacts/metrics/pipeline_metrics.json
